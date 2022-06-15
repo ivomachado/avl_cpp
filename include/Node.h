@@ -8,7 +8,7 @@
 
 #define LOG std::cout << __FILE__ << ":" << __LINE__ << "\n"
 
-template <class T, class Less = std::less<T>> class Node {
+template <class T> class Node {
 public:
     enum Direction : int8_t { Left = -1, Right = +1 };
     using NodePtr = typename std::unique_ptr<Node>;
@@ -162,7 +162,7 @@ private:
     }
 
     Direction searchDirection(const T &value) const {
-        return Less()(value, value_) ? Direction::Left : Direction::Right;
+        return value < value_ ? Direction::Left : Direction::Right;
     }
 
     static Direction otherDirection(Direction direction) {
