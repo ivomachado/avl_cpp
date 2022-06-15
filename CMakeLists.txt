@@ -15,9 +15,19 @@ fetchcontent_declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 fetchcontent_makeavailable(googletest)
 
+
+set(CMAKE_CXX_STANDARD 20)
+
+add_library(libavl INTERFACE)
+
 add_executable(
   avl_cpp
   src/main.cpp
+)
+
+target_include_directories(
+  libavl
+  INTERFACE include
 )
 
 add_executable(
@@ -25,29 +35,8 @@ add_executable(
   test/NodeTest.cpp
 )
 
-set_property(
-  TARGET avl_cpp
-  PROPERTY CXX_STANDARD 20
-)
-
-set_property(
-  TARGET avl_cpp_test
-  PROPERTY CXX_STANDARD 20
-)
-
-target_include_directories(
-  avl_cpp
-  PUBLIC src
-  PRIVATE gtest_main
-)
-
-target_include_directories(
-  avl_cpp_test
-  PRIVATE gtest_main
-  PRIVATE src
-)
-
-target_link_libraries(avl_cpp_test gtest_main)
+target_link_libraries(avl_cpp libavl)
+target_link_libraries(avl_cpp_test libavl gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(avl_cpp_test)
