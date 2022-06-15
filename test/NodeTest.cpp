@@ -4,19 +4,49 @@
 #include <stack>
 #include <unordered_set>
 
+using NodeInt = Node<int>;
+using NodeIntWithString = Node<int, std::string>;
+
 TEST(NodeTest, Construction) {
     for (int i = 0; i < 1000; i++) {
-        auto node = Node<int>::create(1);
+        auto node = NodeInt::create(1);
         EXPECT_TRUE(node->isLeaf());
-        EXPECT_EQ(node->getChild(Node<int>::Direction::Left), nullptr);
-        EXPECT_EQ(node->getChild(Node<int>::Direction::Right), nullptr);
+        EXPECT_EQ(node->getChild(NodeInt::Direction::Left), nullptr);
+        EXPECT_EQ(node->getChild(NodeInt::Direction::Right), nullptr);
         EXPECT_EQ(node->fb(), 0);
-        EXPECT_EQ(node->value(), 1);
+        EXPECT_EQ(node->key(), 1);
     }
 }
 
+TEST(NodeTest, ConstructionWithValue) {
+    for (int i = 0; i < 1000; i++) {
+        auto node = NodeIntWithString::create(1, std::string("string") + std::to_string(i));
+        EXPECT_EQ(node->value(), std::string("string") + std::to_string(i));
+        node->value() = std::string("string") + std::to_string(i + 1);
+        EXPECT_EQ(node->value(), std::string("string") + std::to_string(i + 1));
+    }
+}
+
+TEST(NodeTest, RemoveWithValue) {
+    for (int i = 0; i < 1000; i++) {
+        auto node = NodeIntWithString::create(1, std::string("string") + std::to_string(i));
+        auto [newNode, value] = node->remove(std::move(node), 1);
+        ASSERT_TRUE(value);
+        EXPECT_EQ(*value, std::string("string") + std::to_string(i));
+        EXPECT_EQ(newNode, nullptr);
+    }
+}
+
+
+TEST(NodeTest, Sizes) {
+    EXPECT_LT(sizeof(Node<int8_t>), sizeof(Node<int8_t, int64_t>));
+    EXPECT_EQ(sizeof(Node<int16_t>), sizeof(Node<int8_t, int8_t>));
+    EXPECT_LT(sizeof(Node<int8_t>), sizeof(Node<int64_t>));
+    EXPECT_LT(sizeof(Node<int64_t>), sizeof(Node<std::tuple<int64_t, int64_t>>));
+}
+
 TEST(NodeTest, InsertBiggerAndSmaller) {
-    auto node = Node<int>::create(2);
+    auto node = NodeInt::create(2);
     auto oldAddress = node.get();
 
     bool gotTaller;
@@ -32,18 +62,18 @@ TEST(NodeTest, InsertBiggerAndSmaller) {
     EXPECT_EQ(node->fb(), 0);
     EXPECT_FALSE(gotTaller);
 
-    decltype(auto) leftChild = node->getChild(Node<int>::Direction::Left);
-    decltype(auto) rightChild = node->getChild(Node<int>::Direction::Right);
+    decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
+    decltype(auto) rightChild = node->getChild(NodeInt::Direction::Right);
 
     ASSERT_NE(leftChild, nullptr);
     ASSERT_NE(rightChild, nullptr);
 
-    EXPECT_EQ(leftChild->value(), 1);
-    EXPECT_EQ(rightChild->value(), 3);
+    EXPECT_EQ(leftChild->key(), 1);
+    EXPECT_EQ(rightChild->key(), 3);
 }
 
 TEST(NodeTest, InsertSmallerAndBigger) {
-    auto node = Node<int>::create(2);
+    auto node = NodeInt::create(2);
     auto oldAddress = node.get();
 
     bool gotTaller;
@@ -59,18 +89,18 @@ TEST(NodeTest, InsertSmallerAndBigger) {
     EXPECT_EQ(node->fb(), 0);
     EXPECT_FALSE(gotTaller);
 
-    decltype(auto) leftChild = node->getChild(Node<int>::Direction::Left);
-    decltype(auto) rightChild = node->getChild(Node<int>::Direction::Right);
+    decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
+    decltype(auto) rightChild = node->getChild(NodeInt::Direction::Right);
 
     ASSERT_NE(leftChild, nullptr);
     ASSERT_NE(rightChild, nullptr);
 
-    EXPECT_EQ(leftChild->value(), 1);
-    EXPECT_EQ(rightChild->value(), 3);
+    EXPECT_EQ(leftChild->key(), 1);
+    EXPECT_EQ(rightChild->key(), 3);
 }
 
 TEST(NodeTest, SingleRotationRight) {
-    auto node = Node<int>::create(1);
+    auto node = NodeInt::create(1);
     auto oldAddress = node.get();
 
     bool gotTaller;
@@ -83,25 +113,25 @@ TEST(NodeTest, SingleRotationRight) {
     std::tie(node, gotTaller) = node->insert(std::move(node), 3);
 
     ASSERT_NE(node.get(), oldAddress);
-    EXPECT_EQ(node->value(), 2);
+    EXPECT_EQ(node->key(), 2);
     EXPECT_EQ(node->fb(), 0);
     EXPECT_FALSE(gotTaller);
 
-    decltype(auto) leftChild = node->getChild(Node<int>::Direction::Left);
-    decltype(auto) rightChild = node->getChild(Node<int>::Direction::Right);
+    decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
+    decltype(auto) rightChild = node->getChild(NodeInt::Direction::Right);
 
     ASSERT_NE(leftChild, nullptr);
     ASSERT_NE(rightChild, nullptr);
 
-    EXPECT_EQ(leftChild->value(), 1);
+    EXPECT_EQ(leftChild->key(), 1);
     EXPECT_EQ(leftChild.get(), oldAddress);
     EXPECT_EQ(leftChild->fb(), 0);
     EXPECT_EQ(rightChild->fb(), 0);
-    EXPECT_EQ(rightChild->value(), 3);
+    EXPECT_EQ(rightChild->key(), 3);
 }
 
 TEST(NodeTest, SingleRotationLeft) {
-    auto node = Node<int>::create(3);
+    auto node = NodeInt::create(3);
     auto oldAddress = node.get();
 
     bool gotTaller;
@@ -114,25 +144,25 @@ TEST(NodeTest, SingleRotationLeft) {
     std::tie(node, gotTaller) = node->insert(std::move(node), 1);
 
     ASSERT_NE(node.get(), oldAddress);
-    EXPECT_EQ(node->value(), 2);
+    EXPECT_EQ(node->key(), 2);
     EXPECT_EQ(node->fb(), 0);
     EXPECT_FALSE(gotTaller);
 
-    decltype(auto) leftChild = node->getChild(Node<int>::Direction::Left);
-    decltype(auto) rightChild = node->getChild(Node<int>::Direction::Right);
+    decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
+    decltype(auto) rightChild = node->getChild(NodeInt::Direction::Right);
 
     ASSERT_NE(leftChild, nullptr);
     ASSERT_NE(rightChild, nullptr);
 
-    EXPECT_EQ(leftChild->value(), 1);
+    EXPECT_EQ(leftChild->key(), 1);
     EXPECT_EQ(rightChild.get(), oldAddress);
     EXPECT_EQ(leftChild->fb(), 0);
     EXPECT_EQ(rightChild->fb(), 0);
-    EXPECT_EQ(rightChild->value(), 3);
+    EXPECT_EQ(rightChild->key(), 3);
 }
 
 TEST(NodeTest, DoubleRotationRight) {
-    auto node = Node<int>::create(3);
+    auto node = NodeInt::create(3);
     auto oldAddress = node.get();
 
     bool gotTaller;
@@ -145,24 +175,24 @@ TEST(NodeTest, DoubleRotationRight) {
     std::tie(node, gotTaller) = node->insert(std::move(node), 2);
 
     ASSERT_NE(node.get(), oldAddress);
-    EXPECT_EQ(node->value(), 2);
+    EXPECT_EQ(node->key(), 2);
     EXPECT_EQ(node->fb(), 0);
     EXPECT_FALSE(gotTaller);
 
-    decltype(auto) leftChild = node->getChild(Node<int>::Direction::Left);
-    decltype(auto) rightChild = node->getChild(Node<int>::Direction::Right);
+    decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
+    decltype(auto) rightChild = node->getChild(NodeInt::Direction::Right);
 
     ASSERT_NE(leftChild, nullptr);
     ASSERT_NE(rightChild, nullptr);
 
-    EXPECT_EQ(leftChild->value(), 1);
+    EXPECT_EQ(leftChild->key(), 1);
     EXPECT_EQ(rightChild.get(), oldAddress);
     EXPECT_EQ(rightChild->fb(), 0);
-    EXPECT_EQ(rightChild->value(), 3);
+    EXPECT_EQ(rightChild->key(), 3);
 }
 
 TEST(NodeTest, DoubleRotationLeft) {
-    auto node = Node<int>::create(1);
+    auto node = NodeInt::create(1);
     auto oldAddress = node.get();
 
     bool gotTaller;
@@ -175,24 +205,24 @@ TEST(NodeTest, DoubleRotationLeft) {
     std::tie(node, gotTaller) = node->insert(std::move(node), 2);
 
     ASSERT_NE(node.get(), oldAddress);
-    EXPECT_EQ(node->value(), 2);
+    EXPECT_EQ(node->key(), 2);
     EXPECT_EQ(node->fb(), 0);
     EXPECT_FALSE(gotTaller);
 
-    decltype(auto) leftChild = node->getChild(Node<int>::Direction::Left);
-    decltype(auto) rightChild = node->getChild(Node<int>::Direction::Right);
+    decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
+    decltype(auto) rightChild = node->getChild(NodeInt::Direction::Right);
 
     ASSERT_NE(leftChild, nullptr);
     ASSERT_NE(rightChild, nullptr);
 
-    EXPECT_EQ(leftChild->value(), 1);
+    EXPECT_EQ(leftChild->key(), 1);
     EXPECT_EQ(leftChild.get(), oldAddress);
     EXPECT_EQ(leftChild->fb(), 0);
-    EXPECT_EQ(rightChild->value(), 3);
+    EXPECT_EQ(rightChild->key(), 3);
 }
 
 TEST(NodeTest, RemoveLeaf) {
-    auto node = Node<int>::create(1);
+    auto node = NodeInt::create(1);
 
     std::optional<int> receivedValue;
     std::tie(node, receivedValue) = node->remove(std::move(node), 1);
@@ -204,7 +234,7 @@ TEST(NodeTest, RemoveLeaf) {
 }
 
 TEST(NodeTest, RemoveRightChild) {
-    auto node = Node<int>::create(1);
+    auto node = NodeInt::create(1);
     auto oldAddress = node.get();
 
     std::tie(node, std::ignore) = node->insert(std::move(node), 2);
@@ -220,7 +250,7 @@ TEST(NodeTest, RemoveRightChild) {
 }
 
 TEST(NodeTest, RemoveLeftChild) {
-    auto node = Node<int>::create(2);
+    auto node = NodeInt::create(2);
     auto oldAddress = node.get();
 
     std::tie(node, std::ignore) = node->insert(std::move(node), 1);
@@ -236,10 +266,10 @@ TEST(NodeTest, RemoveLeftChild) {
 }
 
 TEST(NodeTest, RemoveNodeWithLeftChild) {
-    auto node = Node<int>::create(2);
+    auto node = NodeInt::create(2);
 
     std::tie(node, std::ignore) = node->insert(std::move(node), 1);
-    auto leftChildAddress = node->getChild(Node<int>::Direction::Left).get();
+    auto leftChildAddress = node->getChild(NodeInt::Direction::Left).get();
 
     std::optional<int> receivedValue;
     std::tie(node, receivedValue) = node->remove(std::move(node), 2);
@@ -252,10 +282,10 @@ TEST(NodeTest, RemoveNodeWithLeftChild) {
 }
 
 TEST(NodeTest, RemoveNodeWithRightChild) {
-    auto node = Node<int>::create(2);
+    auto node = NodeInt::create(2);
 
     std::tie(node, std::ignore) = node->insert(std::move(node), 3);
-    auto rightChildAddress = node->getChild(Node<int>::Direction::Right).get();
+    auto rightChildAddress = node->getChild(NodeInt::Direction::Right).get();
 
     std::optional<int> receivedValue;
     std::tie(node, receivedValue) = node->remove(std::move(node), 2);
@@ -268,11 +298,11 @@ TEST(NodeTest, RemoveNodeWithRightChild) {
 }
 
 TEST(NodeTest, RemoveNodeWithTwoChildren) {
-    auto node = Node<int>::create(2);
+    auto node = NodeInt::create(2);
 
     std::tie(node, std::ignore) = node->insert(std::move(node), 1);
     std::tie(node, std::ignore) = node->insert(std::move(node), 3);
-    auto leftChildAddress = node->getChild(Node<int>::Direction::Left).get();
+    auto leftChildAddress = node->getChild(NodeInt::Direction::Left).get();
 
     std::optional<int> receivedValue;
     std::tie(node, receivedValue) = node->remove(std::move(node), 2);
@@ -284,16 +314,16 @@ TEST(NodeTest, RemoveNodeWithTwoChildren) {
 }
 
 TEST(NodeTest, RemoveNodeWithTwoChildrenAndGrandchild) {
-    auto node = Node<int>::create(3);
+    auto node = NodeInt::create(3);
 
     std::tie(node, std::ignore) = node->insert(std::move(node), 1);
     std::tie(node, std::ignore) = node->insert(std::move(node), 4);
     std::tie(node, std::ignore) = node->insert(std::move(node), 2);
 
     ASSERT_EQ(node->fb(), -1);
-    ASSERT_NE(node->getChild(Node<int>::Direction::Left), nullptr);
+    ASSERT_NE(node->getChild(NodeInt::Direction::Left), nullptr);
 
-    auto expectedRoot = node->getChild(Node<int>::Direction::Left)->getChild(Node<int>::Direction::Right).get();
+    auto expectedRoot = node->getChild(NodeInt::Direction::Left)->getChild(NodeInt::Direction::Right).get();
     ASSERT_NE(expectedRoot, nullptr);
 
     std::optional<int> receivedValue;
@@ -308,9 +338,9 @@ TEST(NodeTest, RemoveNodeWithTwoChildrenAndGrandchild) {
 
 class NodeComplexTest: public ::testing::Test {
 public:
-    Node<int>::NodePtr node;
+    NodeInt::NodePtr node;
 
-    NodeComplexTest(): node(Node<int>::create(5)) {};
+    NodeComplexTest(): node(NodeInt::create(5)) {};
 
     void SetUp() override {
         std::tie(node, std::ignore) = node->insert(std::move(node), 6);
@@ -320,14 +350,14 @@ public:
         std::tie(node, std::ignore) = node->insert(std::move(node), 7);
         std::tie(node, std::ignore) = node->insert(std::move(node), 4);
 
-        ASSERT_NE(node->getChild(Node<int>::Direction::Left), nullptr);
+        ASSERT_NE(node->getChild(NodeInt::Direction::Left), nullptr);
     };
 };
 
 TEST_F(NodeComplexTest, RemoveRoot) {
-    ASSERT_NE(node->getChild(Node<int>::Direction::Left)->getChild(Node<int>::Direction::Right)->getChild(Node<int>::Direction::Right), nullptr);
+    ASSERT_NE(node->getChild(NodeInt::Direction::Left)->getChild(NodeInt::Direction::Right)->getChild(NodeInt::Direction::Right), nullptr);
 
-    auto expectedRoot = node->getChild(Node<int>::Direction::Left)->getChild(Node<int>::Direction::Right)->getChild(Node<int>::Direction::Right).get();
+    auto expectedRoot = node->getChild(NodeInt::Direction::Left)->getChild(NodeInt::Direction::Right)->getChild(NodeInt::Direction::Right).get();
     ASSERT_NE(expectedRoot, nullptr);
 
     std::optional<int> receivedValue;
@@ -341,11 +371,11 @@ TEST_F(NodeComplexTest, RemoveRoot) {
 }
 
 TEST_F(NodeComplexTest, RemoveNode2) {
-    ASSERT_NE(node->getChild(Node<int>::Direction::Left)->getChild(Node<int>::Direction::Left), nullptr);
+    ASSERT_NE(node->getChild(NodeInt::Direction::Left)->getChild(NodeInt::Direction::Left), nullptr);
     auto oldAddress = node.get();
 
     // a Single Left rotation is made
-    auto expectedLeftChild = node->getChild(Node<int>::Direction::Left)->getChild(Node<int>::Direction::Right).get();
+    auto expectedLeftChild = node->getChild(NodeInt::Direction::Left)->getChild(NodeInt::Direction::Right).get();
     ASSERT_NE(expectedLeftChild, nullptr);
 
     std::optional<int> receivedValue;
@@ -357,17 +387,17 @@ TEST_F(NodeComplexTest, RemoveNode2) {
 
     EXPECT_EQ(node->fb(), 0);
 
-    decltype(auto) leftChild = node->getChild(Node<int>::Direction::Left);
+    decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
     EXPECT_EQ(leftChild.get(), expectedLeftChild);
 }
 
 class NodeStressTest: public ::testing::Test {
 public:
-    Node<int>::NodePtr node;
+    NodeInt::NodePtr node;
     std::default_random_engine generator;
     std::set<int> numbers;
 
-    NodeStressTest(): node(Node<int>::create(5)) {};
+    NodeStressTest(): node(NodeInt::create(5)) {};
 
     void populateNumbers(size_t size) {
         for(int i = 0; i < size; i++) {
@@ -384,16 +414,16 @@ public:
         numbers.erase(numberIt);
         return number;
     };
-    
-    size_t checkOrderAndReturnSize (const Node<int>::NodePtr& node) {
+
+    size_t checkOrderAndReturnSize (const NodeInt::NodePtr& node) {
         size_t leftSubTreeHeight = 0, rightSubTreeHeight = 0;
-        if (decltype(auto) child = node->getChild(Node<int>::Direction::Left)) {
-            EXPECT_LT(child->value(), node->value());
+        if (decltype(auto) child = node->getChild(NodeInt::Direction::Left)) {
+            EXPECT_LT(child->key(), node->key());
             leftSubTreeHeight = checkOrderAndReturnSize(child);
         }
 
-        if (decltype(auto) child = node->getChild(Node<int>::Direction::Right)) {
-            EXPECT_GT(child->value(), node->value());
+        if (decltype(auto) child = node->getChild(NodeInt::Direction::Right)) {
+            EXPECT_GT(child->key(), node->key());
             rightSubTreeHeight = checkOrderAndReturnSize(child);
         }
         EXPECT_EQ(node->fb(), rightSubTreeHeight - leftSubTreeHeight);
@@ -403,7 +433,7 @@ public:
 
     void testInsertion(size_t size) {
         populateNumbers(size);
-        auto node = Node<int>::create(getNumber());
+        auto node = NodeInt::create(getNumber());
 
         while(!numbers.empty()) {
             std::tie(node, std::ignore) = node->insert(std::move(node), getNumber());
@@ -415,7 +445,7 @@ public:
 
     void testInsertionFast(size_t size) {
         populateNumbers(size);
-        auto node = Node<int>::create(getNumber());
+        auto node = NodeInt::create(getNumber());
 
         while(!numbers.empty()) {
             std::tie(node, std::ignore) = node->insert(std::move(node), getNumber());
@@ -427,7 +457,7 @@ public:
 
     void testRemotion(size_t size) {
         populateNumbers(size);
-        auto node = Node<int>::create(getNumber());
+        auto node = NodeInt::create(getNumber());
 
         while(!numbers.empty()) {
             std::tie(node, std::ignore) = node->insert(std::move(node), getNumber());

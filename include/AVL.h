@@ -11,7 +11,7 @@ class AVL {
     public:
         void insert(T &&value) {
             if (!root_) {
-                root_ = std::make_unique<Node<T>>(std::move(value));
+                root_ = Node<T>::create(std::move(value));
             } else {
                 bool result;
                 std::tie(root_, result) = root_->insert(std::move(root_), std::move(value));
