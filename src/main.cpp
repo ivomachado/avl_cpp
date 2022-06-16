@@ -1,12 +1,11 @@
-#include "AVL.h"
-#include "Node.h"
+#include "avl/Tree.h"
 
 #include <iostream>
 #include <memory>
 #include <algorithm>
 
 int main() {
-    AVL<int> tree;
+    avl::Tree<int> tree;
 
     // tree.insert(5);
     // tree.insert(4);

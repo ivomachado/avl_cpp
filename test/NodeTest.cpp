@@ -1,8 +1,10 @@
-#include <Node.h>
+#include <avl/Node.h>
 #include <gtest/gtest.h>
 #include <random>
 #include <stack>
 #include <unordered_set>
+
+namespace avl {
 
 using NodeInt = Node<int>;
 using NodeIntWithString = Node<int, std::string>;
@@ -27,6 +29,16 @@ TEST(NodeTest, ConstructionWithValue) {
     }
 }
 
+TEST(NodeTest, InsertionWithValue) {
+    for (int i = 0; i < 1000; i++) {
+        auto node = NodeIntWithString::create(1, std::string("string") + std::to_string(i));
+        std::tie(node, std::ignore) = node->insert(std::move(node), i, std::string("string") + std::to_string(i));
+        EXPECT_EQ(node->value(), std::string("string") + std::to_string(i));
+        node->value() = std::string("string") + std::to_string(i + 1);
+        EXPECT_EQ(node->value(), std::string("string") + std::to_string(i + 1));
+    }
+}
+
 TEST(NodeTest, RemoveWithValue) {
     for (int i = 0; i < 1000; i++) {
         auto node = NodeIntWithString::create(1, std::string("string") + std::to_string(i));
@@ -36,7 +48,6 @@ TEST(NodeTest, RemoveWithValue) {
         EXPECT_EQ(newNode, nullptr);
     }
 }
-
 
 TEST(NodeTest, Sizes) {
     EXPECT_LT(sizeof(Node<int8_t>), sizeof(Node<int8_t, int64_t>));
@@ -506,3 +517,5 @@ TEST_INSERTION_AND_REMOTION(100);
 TEST_INSERTION_AND_REMOTION(1000);
 TEST_INSERTION_AND_REMOTION(10000);
 TEST_INSERTION_FAST(100000);
+
+}

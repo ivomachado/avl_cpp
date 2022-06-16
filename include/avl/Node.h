@@ -5,15 +5,16 @@
 #include <memory>
 #include <optional>
 
-
-#define LOG std::cout << __FILE__ << ":" << __LINE__ << "\n"
-
+namespace avl {
 
 template <class K, class V = void> class Node {
+private:
+    struct Empty {};
+    static constexpr bool keyOnly = std::is_same<V, void>::value;
+
 public:
     enum Direction : int8_t { Left = -1, Right = +1 };
     using NodePtr = typename std::unique_ptr<Node>;
-    static constexpr bool keyOnly = std::is_same<V, void>::value;
     using ValueType = typename std::conditional<keyOnly, K, V>::type;
     using ConstValueType = typename std::conditional<keyOnly, const K, V>::type;
 
@@ -25,17 +26,11 @@ public:
         }
     }
 
-    template <class VV = V>
-    static typename std::enable_if<std::is_same<VV,void>::value, NodePtr>::type
-    create(const K& key) {
-        return NodePtr(new Node(key));
-    }
-
-    template <class VV = V>
-    static typename std::enable_if<!std::is_same<VV,void>::value, NodePtr>::type
-    create(const K& key, VV&& value) {
-        return NodePtr(new Node(key, value));
-    }
+    template <class ...Args>
+        static NodePtr
+        create(const K &key, Args ...args) {
+            return NodePtr(new Node(key, args...));
+        }
 
     NodePtr &getChild(Direction direction) {
         return (direction == Direction::Left ? left_ : right_);
@@ -49,93 +44,103 @@ public:
 
     bool isLeaf() const { return !(left_ || right_); };
 
-    std::pair<NodePtr, bool> insert(NodePtr &&self, K &&key) {
-        if (key == key_) {
-            return std::make_pair(std::move(self), false);
-        }
-        auto direction = searchDirection(key);
-        if (!getChild(direction)) {
-            setChild(direction, Node::create(std::move(key)));
-            fb_ += direction;
-            return std::make_pair(std::move(self), fb_ != 0);
-        }
-
-        auto [newChild, childGotTaller] =
-            getChild(direction)->insert(moveChild(direction), std::move(key));
-        setChild(direction, std::move(newChild));
-
-        if (!childGotTaller) {
-            return std::make_pair(std::move(self), false);
-        }
-
-        fb_ += direction;
-        if (std::abs(fb_) < 2) {
-            return std::make_pair(std::move(self), fb_ == direction);
-        }
-        return std::make_pair(rotate(otherDirection(direction), std::move(self)),
-                false);
-    }
-
-    std::pair<NodePtr, std::optional<ValueType>> remove(NodePtr self, const K &key) {
-        if (key == key_) {
-            ValueType data;
-            if constexpr (std::is_same<V, void>::value) {
-                data = std::move(key_);
-            } else {
-                data = std::move(value_);
+    template <class ...Value, typename std::enable_if<sizeof...(Value) == (keyOnly? 0 : 1)>::type...>
+        std::pair<NodePtr, bool>
+        insert(NodePtr &&self, const K &key, Value ...value) {
+            if (key == key_) {
+                if constexpr (!keyOnly) {
+                    value_ = std::move(value...);
+                }
+                return std::make_pair(std::move(self), false);
             }
-            if (isLeaf()) {
-                return std::make_pair(nullptr, std::make_optional(std::move(data)));
-            }
-            if (!getChild(Direction::Left) != !getChild(Direction::Right)) {
-                auto direction =
-                    getChild(Direction::Left) ? Direction::Left : Direction::Right;
-                return std::make_pair(moveChild(direction), std::make_optional(data));
-            }
-
-            auto oldLeftChildFb = getChild(Direction::Left)->fb();
-
-            auto [leftChild, replacement] =
-                getChild(Direction::Left)
-                ->getRightReplacement(self->moveChild(Direction::Left));
-
-            replacement->fb() = fb();
-            if (!leftChild || (oldLeftChildFb != leftChild->fb() && leftChild->fb() == 0)) {
-                replacement->fb() += Direction::Right;
-            }
-
-            replacement->setChild(Direction::Left, std::move(leftChild));
-            replacement->setChild(Direction::Right, moveChild(Direction::Right));
-
-            if (std::abs(replacement->fb()) == 2) {
-                return std::make_pair(rotate(Direction::Left, std::move(replacement)),
-                        std::make_optional(data));
-            }
-
-            return std::make_pair(std::move(replacement), std::make_optional(data));
-        } else {
             auto direction = searchDirection(key);
+            if (!getChild(direction)) {
+                setChild(direction, Node::create(key, std::move(value)...));
+                fb_ += direction;
+                return std::make_pair(std::move(self), fb_ != 0);
+            }
 
-            if (auto &oldChild = getChild(direction)) {
-                auto childOldFb = oldChild->fb();
-                auto [newChild, data] = oldChild->remove(moveChild(direction), key);
+            NodePtr newChild;
+            bool childGotTaller;
 
-                if (!newChild ||
-                        (childOldFb != newChild->fb() && newChild->fb() == 0)) {
-                    fb() += otherDirection(direction);
+            std::tie(newChild, childGotTaller) = getChild(direction)->insert(
+                    moveChild(direction), key, std::move(value)...);
+            setChild(direction, std::move(newChild));
+
+            if (!childGotTaller) {
+                return std::make_pair(std::move(self), false);
+            }
+
+            fb_ += direction;
+            if (std::abs(fb_) < 2) {
+                return std::make_pair(std::move(self), fb_ == direction);
+            }
+            return std::make_pair(rotate(otherDirection(direction), std::move(self)),
+                    false);
+        }
+
+    std::pair<NodePtr, std::optional<ValueType>>
+        remove(NodePtr self, const K &key) {
+            if (key == key_) {
+                ValueType data;
+                if constexpr (keyOnly) {
+                    data = std::move(key_);
+                } else {
+                    data = std::move(value_);
                 }
-                setChild(direction, std::move(newChild));
-
-                if (std::abs(fb()) == 2) {
-                    return std::make_pair(rotate(direction, std::move(self)),
-                            std::move(data));
+                if (isLeaf()) {
+                    return std::make_pair(nullptr, std::make_optional(std::move(data)));
                 }
-                return std::make_pair(std::move(self), std::move(data));
+                if (!getChild(Direction::Left) != !getChild(Direction::Right)) {
+                    auto direction =
+                        getChild(Direction::Left) ? Direction::Left : Direction::Right;
+                    return std::make_pair(moveChild(direction), std::make_optional(data));
+                }
+
+                auto oldLeftChildFb = getChild(Direction::Left)->fb();
+
+                auto [leftChild, replacement] =
+                    getChild(Direction::Left)
+                    ->getRightReplacement(self->moveChild(Direction::Left));
+
+                replacement->fb() = fb();
+                if (!leftChild ||
+                        (oldLeftChildFb != leftChild->fb() && leftChild->fb() == 0)) {
+                    replacement->fb() += Direction::Right;
+                }
+
+                replacement->setChild(Direction::Left, std::move(leftChild));
+                replacement->setChild(Direction::Right, moveChild(Direction::Right));
+
+                if (std::abs(replacement->fb()) == 2) {
+                    return std::make_pair(rotate(Direction::Left, std::move(replacement)),
+                            std::make_optional(data));
+                }
+
+                return std::make_pair(std::move(replacement), std::make_optional(data));
             } else {
-                return std::make_pair(std::move(self), std::optional<ConstValueType>());
+                auto direction = searchDirection(key);
+
+                if (auto &oldChild = getChild(direction)) {
+                    auto childOldFb = oldChild->fb();
+                    auto [newChild, data] = oldChild->remove(moveChild(direction), key);
+
+                    if (!newChild ||
+                            (childOldFb != newChild->fb() && newChild->fb() == 0)) {
+                        fb() += otherDirection(direction);
+                    }
+                    setChild(direction, std::move(newChild));
+
+                    if (std::abs(fb()) == 2) {
+                        return std::make_pair(rotate(direction, std::move(self)),
+                                std::move(data));
+                    }
+                    return std::make_pair(std::move(self), std::move(data));
+                } else {
+                    return std::make_pair(std::move(self), std::optional<ConstValueType>());
+                }
             }
         }
-    }
 
     void print(size_t level) {
         std::cout << "fb: " << fb_ << ", value: " << key() << std::endl;
@@ -158,15 +163,16 @@ public:
     }
 
 private:
-    template <class VV = V, typename std::enable_if<std::is_same<VV,void>::value>::type...>
-    Node(const K &k) : key_(k), fb_(0), left_(nullptr), right_(nullptr) {}
-
-    template <class VV = V, typename std::enable_if<!std::is_same<VV,void>::value>::type...>
-    Node(const K &k, VV &&v) : key_(k), value_(v), fb_(0), left_(nullptr), right_(nullptr) {}
+    template<class ...Value, class std::enable_if<sizeof...(Value) == keyOnly? 0: 1>::type...> Node(const K &k, Value ...value):
+        key_(k),
+        value_(value...),
+        fb_(0),
+        left_(nullptr),
+        right_(nullptr)
+    {
+    }
 
     K key_;
-
-    struct Empty {} ;
 
     [[no_unique_address]] typename std::conditional<!keyOnly, V, Empty>::type value_;
 
@@ -266,3 +272,5 @@ private:
         (direction == Direction::Left ? left_ : right_) = std::move(p);
     }
 };
+
+} // namespace avl
