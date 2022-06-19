@@ -7,6 +7,13 @@
 
 namespace avl {
 
+#define CHECK_ARGS_PACK_SIZE() \
+if constexpr (keyOnly) { \
+    static_assert(sizeof...(Value) == 0, "Expected 1 argument, got more"); \
+} else { \
+    static_assert(sizeof...(Value) == 1, "Expected 2 arguments, got more"); \
+}
+
 template <class K, class V = void> class Node {
 private:
     struct Empty {};
@@ -26,10 +33,11 @@ public:
         }
     }
 
-    template <class ...Args>
+    template <class ...Value>
         static NodePtr
-        create(const K &key, Args ...args) {
-            return NodePtr(new Node(key, args...));
+        create(const K &key, Value ...value) {
+            CHECK_ARGS_PACK_SIZE();
+            return NodePtr(new Node(key, value...));
         }
 
     NodePtr &getChild(Direction direction) {
@@ -44,9 +52,10 @@ public:
 
     bool isLeaf() const { return !(left_ || right_); };
 
-    template <class ...Value, typename std::enable_if<sizeof...(Value) == (keyOnly? 0 : 1)>::type...>
+    template <class ...Value>
         std::pair<NodePtr, bool>
         insert(NodePtr &&self, const K &key, Value ...value) {
+            CHECK_ARGS_PACK_SIZE();
             if (key == key_) {
                 if constexpr (!keyOnly) {
                     value_ = std::move(value...);
@@ -163,13 +172,14 @@ public:
     }
 
 private:
-    template<class ...Value, class std::enable_if<sizeof...(Value) == keyOnly? 0: 1>::type...> Node(const K &k, Value ...value):
+    template<class ...Value> Node(const K &k, Value ...value):
         key_(k),
         value_(value...),
         fb_(0),
         left_(nullptr),
         right_(nullptr)
     {
+        CHECK_ARGS_PACK_SIZE();
     }
 
     K key_;
