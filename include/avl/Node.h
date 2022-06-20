@@ -21,11 +21,11 @@ private:
 
 public:
     enum Direction : int8_t { Left = -1, Right = +1 };
-    using NodePtr = typename std::unique_ptr<Node>;
-    using ValueType = typename std::conditional<keyOnly, K, V>::type;
-    using ConstValueType = typename std::conditional<keyOnly, const K, V>::type;
+    using NodePtr = std::unique_ptr<Node>;
+    using ValueReturnType = typename std::conditional<keyOnly, K, V>::type;
+    using ConstValueReturnType = typename std::conditional<keyOnly, const K, V>::type;
 
-    ConstValueType &value() {
+    ConstValueReturnType &value() {
         if constexpr (keyOnly) {
             return key_;
         } else {
@@ -88,10 +88,10 @@ public:
                     false);
         }
 
-    std::pair<NodePtr, std::optional<ValueType>>
+    std::pair<NodePtr, std::optional<ValueReturnType>>
         remove(NodePtr self, const K &key) {
             if (key == key_) {
-                ValueType data;
+                ValueReturnType data;
                 if constexpr (keyOnly) {
                     data = std::move(key_);
                 } else {
@@ -146,7 +146,7 @@ public:
                     }
                     return std::make_pair(std::move(self), std::move(data));
                 } else {
-                    return std::make_pair(std::move(self), std::optional<ConstValueType>());
+                    return std::make_pair(std::move(self), std::optional<ValueReturnType>());
                 }
             }
         }
@@ -184,7 +184,7 @@ private:
 
     K key_;
 
-    [[no_unique_address]] typename std::conditional<!keyOnly, V, Empty>::type value_;
+    [[no_unique_address]] std::conditional<!keyOnly, V, Empty>::type value_;
 
     int fb_;
     NodePtr left_, right_;

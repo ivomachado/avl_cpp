@@ -33,6 +33,7 @@ target_include_directories(
 add_executable(
   avl_cpp_test
   test/NodeTest.cpp
+  test/TreeTest.cpp
 )
 
 target_link_libraries(avl_cpp libavl)

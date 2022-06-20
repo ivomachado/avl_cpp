@@ -1,10 +1,12 @@
 #include <avl/Node.h>
 #include <gtest/gtest.h>
 #include <random>
-#include <stack>
 #include <unordered_set>
 
+#include "Util.h"
+
 namespace avl {
+namespace tests {
 
 using NodeInt = Node<int>;
 using NodeIntWithString = Node<int, std::string>;
@@ -402,29 +404,12 @@ TEST_F(NodeComplexTest, RemoveNode2) {
     EXPECT_EQ(leftChild.get(), expectedLeftChild);
 }
 
-class NodeStressTest: public ::testing::Test {
+class NodeStressTest: public ::testing::Test, public StressTest {
 public:
     NodeInt::NodePtr node;
-    std::default_random_engine generator;
-    std::set<int> numbers;
 
-    NodeStressTest(): node(NodeInt::create(5)) {};
-
-    void populateNumbers(size_t size) {
-        for(int i = 0; i < size; i++) {
-            numbers.insert(i + 1);
-        }
-    };
-
-    size_t getNumber() {
-        std::uniform_int_distribution<size_t> distribution(0, numbers.size() - 1);
-        size_t position = distribution(generator);
-        auto numberIt = numbers.begin();
-        std::advance(numberIt, position);
-        auto number = *numberIt;
-        numbers.erase(numberIt);
-        return number;
-    };
+    NodeStressTest(): StressTest(),
+    node(NodeInt::create(5)) {};
 
     size_t checkOrderAndReturnSize (const NodeInt::NodePtr& node) {
         size_t leftSubTreeHeight = 0, rightSubTreeHeight = 0;
@@ -518,4 +503,5 @@ TEST_INSERTION_AND_REMOTION(1000);
 TEST_INSERTION_AND_REMOTION(10000);
 TEST_INSERTION_FAST(100000);
 
+}
 }
