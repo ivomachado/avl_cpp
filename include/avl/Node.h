@@ -184,7 +184,7 @@ private:
 
     K key_;
 
-    [[no_unique_address]] std::conditional<!keyOnly, V, Empty>::type value_;
+    [[no_unique_address]] typename std::conditional<!keyOnly, V, Empty>::type value_;
 
     int fb_;
     NodePtr left_, right_;
@@ -219,7 +219,7 @@ private:
         return static_cast<Direction>(direction * -1);
     }
 
-    static NodePtr rotateSingle(Direction direction, NodePtr father) {
+    static NodePtr rotateSimple(Direction direction, NodePtr father) {
         auto child = father->moveChild(otherDirection(direction));
 
         if (child->fb() == 0) {
@@ -270,7 +270,7 @@ private:
         if (father->getChild(oppositeDirection)->fb() == direction) {
             return rotateDouble(direction, std::move(father));
         } else {
-            return rotateSingle(direction, std::move(father));
+            return rotateSimple(direction, std::move(father));
         }
     }
 

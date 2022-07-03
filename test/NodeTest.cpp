@@ -435,7 +435,7 @@ public:
             std::tie(node, std::ignore) = node->insert(std::move(node), getNumber());
             auto height = checkOrderAndReturnSize(node);
 
-            EXPECT_LE(height, std::round(std::ceil(size - numbers.size()) / std::log(2)));
+            EXPECT_LE(height, std::ceil(1.44 * std::ceil(std::log(size - numbers.size())) / std::log(2)));
         }
     }
 
@@ -448,7 +448,7 @@ public:
         }
         auto height = checkOrderAndReturnSize(node);
 
-        EXPECT_LE(height, std::round(std::ceil(size - numbers.size()) / std::log(2)));
+        EXPECT_LE(height, std::ceil(1.44 * std::ceil(std::log(size - numbers.size())) / std::log(2)));
     }
 
     void testRemotion(size_t size) {
@@ -471,7 +471,9 @@ public:
             if (node) {
                 auto height = checkOrderAndReturnSize(node);
 
-                EXPECT_LE(height, std::round(std::ceil(numbers.size()) / std::log(2)));
+                if (height > 1) {
+                    EXPECT_LE(height, std::ceil(1.44 * std::ceil(std::log(numbers.size())) / std::log(2)));
+                }
             } else {
                 EXPECT_TRUE(numbers.empty());
             }
