@@ -48,7 +48,7 @@ public:
 
     bool operator<(const Node &b) const { return key() < b.key(); }
 
-    int &fb() { return fb_; }
+    int &bf() { return bf_; }
 
     bool isLeaf() const { return !(left_ || right_); };
 
@@ -65,8 +65,8 @@ public:
             auto direction = searchDirection(key);
             if (!getChild(direction)) {
                 setChild(direction, Node::create(key, std::move(value)...));
-                fb_ += direction;
-                return std::make_pair(std::move(self), fb_ != 0);
+                bf_ += direction;
+                return std::make_pair(std::move(self), bf_ != 0);
             }
 
             NodePtr newChild;
@@ -80,9 +80,9 @@ public:
                 return std::make_pair(std::move(self), false);
             }
 
-            fb_ += direction;
-            if (std::abs(fb_) < 2) {
-                return std::make_pair(std::move(self), fb_ == direction);
+            bf_ += direction;
+            if (std::abs(bf_) < 2) {
+                return std::make_pair(std::move(self), bf_ == direction);
             }
             return std::make_pair(rotate(otherDirection(direction), std::move(self)),
                     false);
@@ -106,22 +106,22 @@ public:
                     return std::make_pair(moveChild(direction), std::make_optional(data));
                 }
 
-                auto oldLeftChildFb = getChild(Direction::Left)->fb();
+                auto oldLeftChildBf = getChild(Direction::Left)->bf();
 
                 auto [leftChild, replacement] =
                     getChild(Direction::Left)
                     ->getRightReplacement(self->moveChild(Direction::Left));
 
-                replacement->fb() = fb();
+                replacement->bf() = bf();
                 if (!leftChild ||
-                        (oldLeftChildFb != leftChild->fb() && leftChild->fb() == 0)) {
-                    replacement->fb() += Direction::Right;
+                        (oldLeftChildBf != leftChild->bf() && leftChild->bf() == 0)) {
+                    replacement->bf() += Direction::Right;
                 }
 
                 replacement->setChild(Direction::Left, std::move(leftChild));
                 replacement->setChild(Direction::Right, moveChild(Direction::Right));
 
-                if (std::abs(replacement->fb()) == 2) {
+                if (std::abs(replacement->bf()) == 2) {
                     return std::make_pair(rotate(Direction::Left, std::move(replacement)),
                             std::make_optional(data));
                 }
@@ -131,16 +131,16 @@ public:
                 auto direction = searchDirection(key);
 
                 if (auto &oldChild = getChild(direction)) {
-                    auto childOldFb = oldChild->fb();
+                    auto childOldBf = oldChild->bf();
                     auto [newChild, data] = oldChild->remove(moveChild(direction), key);
 
                     if (!newChild ||
-                            (childOldFb != newChild->fb() && newChild->fb() == 0)) {
-                        fb() += otherDirection(direction);
+                            (childOldBf != newChild->bf() && newChild->bf() == 0)) {
+                        bf() += otherDirection(direction);
                     }
                     setChild(direction, std::move(newChild));
 
-                    if (std::abs(fb()) == 2) {
+                    if (std::abs(bf()) == 2) {
                         return std::make_pair(rotate(direction, std::move(self)),
                                 std::move(data));
                     }
@@ -152,7 +152,7 @@ public:
         }
 
     void print(size_t level) {
-        std::cout << "fb: " << fb_ << ", value: " << key() << std::endl;
+        std::cout << "bf: " << bf_ << ", value: " << key() << std::endl;
 
         if (left_) {
             for (size_t i = 0; i < level + 1; i++) {
@@ -175,7 +175,7 @@ private:
     template<class ...Value> Node(const K &k, Value ...value):
         key_(k),
         value_(value...),
-        fb_(0),
+        bf_(0),
         left_(nullptr),
         right_(nullptr)
     {
@@ -186,22 +186,22 @@ private:
 
     [[no_unique_address]] typename std::conditional<!keyOnly, V, Empty>::type value_;
 
-    int fb_;
+    int bf_;
     NodePtr left_, right_;
 
     std::pair<NodePtr, NodePtr> getRightReplacement(NodePtr self) {
         auto direction = Direction::Right;
         if (auto &oldChild = getChild(direction)) {
-            auto childOldFb = oldChild->fb();
+            auto childOldBf = oldChild->bf();
             auto [newChild, replacement] =
                 oldChild->getRightReplacement(self->moveChild(direction));
 
-            if (!newChild || (childOldFb != newChild->fb() && newChild->fb() == 0)) {
-                fb() += otherDirection(direction);
+            if (!newChild || (childOldBf != newChild->bf() && newChild->bf() == 0)) {
+                bf() += otherDirection(direction);
             }
             setChild(direction, std::move(newChild));
 
-            if (std::abs(fb()) == 2) {
+            if (std::abs(bf()) == 2) {
                 return std::make_pair(rotate(direction, std::move(self)),
                         std::move(replacement));
             }
@@ -222,12 +222,12 @@ private:
     static NodePtr rotateSimple(Direction direction, NodePtr father) {
         auto child = father->moveChild(otherDirection(direction));
 
-        if (child->fb() == 0) {
-            father->fb() = otherDirection(direction);
-            child->fb() = direction;
+        if (child->bf() == 0) {
+            father->bf() = otherDirection(direction);
+            child->bf() = direction;
         } else {
-            father->fb() = 0;
-            child->fb() = 0;
+            father->bf() = 0;
+            child->bf() = 0;
         }
 
         father->setChild(otherDirection(direction), child->moveChild(direction));
@@ -240,19 +240,19 @@ private:
         auto child = father->moveChild(otherDirection(direction));
         auto grandChild = child->moveChild(direction);
 
-        if (grandChild->fb() == 0) {
-            father->fb() = 0;
-            child->fb() = 0;
+        if (grandChild->bf() == 0) {
+            father->bf() = 0;
+            child->bf() = 0;
         } else {
-            if (grandChild->fb() == otherDirection(direction)) {
-                father->fb() = direction;
-                child->fb() = 0;
+            if (grandChild->bf() == otherDirection(direction)) {
+                father->bf() = direction;
+                child->bf() = 0;
             } else {
-                father->fb() = 0;
-                child->fb() = otherDirection(direction);
+                father->bf() = 0;
+                child->bf() = otherDirection(direction);
             }
         }
-        grandChild->fb() = 0;
+        grandChild->bf() = 0;
 
         child->setChild(direction,
                 grandChild->moveChild(otherDirection(direction)));
@@ -267,7 +267,7 @@ private:
 
     static NodePtr rotate(Direction direction, NodePtr father) {
         auto oppositeDirection = otherDirection(direction);
-        if (father->getChild(oppositeDirection)->fb() == direction) {
+        if (father->getChild(oppositeDirection)->bf() == direction) {
             return rotateDouble(direction, std::move(father));
         } else {
             return rotateSimple(direction, std::move(father));

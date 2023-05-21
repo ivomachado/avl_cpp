@@ -17,7 +17,7 @@ TEST(NodeTest, Construction) {
         EXPECT_TRUE(node->isLeaf());
         EXPECT_EQ(node->getChild(NodeInt::Direction::Left), nullptr);
         EXPECT_EQ(node->getChild(NodeInt::Direction::Right), nullptr);
-        EXPECT_EQ(node->fb(), 0);
+        EXPECT_EQ(node->bf(), 0);
         EXPECT_EQ(node->key(), 1);
     }
 }
@@ -66,13 +66,13 @@ TEST(NodeTest, InsertBiggerAndSmaller) {
     std::tie(node, gotTaller) = node->insert(std::move(node), 3);
 
     ASSERT_EQ(node.get(), oldAddress);
-    EXPECT_EQ(node->fb(), 1);
+    EXPECT_EQ(node->bf(), 1);
     EXPECT_TRUE(gotTaller);
 
     std::tie(node, gotTaller) = node->insert(std::move(node), 1);
 
     ASSERT_EQ(node.get(), oldAddress);
-    EXPECT_EQ(node->fb(), 0);
+    EXPECT_EQ(node->bf(), 0);
     EXPECT_FALSE(gotTaller);
 
     decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
@@ -93,13 +93,13 @@ TEST(NodeTest, InsertSmallerAndBigger) {
     std::tie(node, gotTaller) = node->insert(std::move(node), 1);
 
     ASSERT_EQ(node.get(), oldAddress);
-    EXPECT_EQ(node->fb(), -1);
+    EXPECT_EQ(node->bf(), -1);
     EXPECT_TRUE(gotTaller);
 
     std::tie(node, gotTaller) = node->insert(std::move(node), 3);
 
     ASSERT_EQ(node.get(), oldAddress);
-    EXPECT_EQ(node->fb(), 0);
+    EXPECT_EQ(node->bf(), 0);
     EXPECT_FALSE(gotTaller);
 
     decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
@@ -120,14 +120,14 @@ TEST(NodeTest, SingleRotationRight) {
     std::tie(node, gotTaller) = node->insert(std::move(node), 2);
 
     ASSERT_EQ(node.get(), oldAddress);
-    EXPECT_EQ(node->fb(), 1);
+    EXPECT_EQ(node->bf(), 1);
     EXPECT_TRUE(gotTaller);
 
     std::tie(node, gotTaller) = node->insert(std::move(node), 3);
 
     ASSERT_NE(node.get(), oldAddress);
     EXPECT_EQ(node->key(), 2);
-    EXPECT_EQ(node->fb(), 0);
+    EXPECT_EQ(node->bf(), 0);
     EXPECT_FALSE(gotTaller);
 
     decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
@@ -138,8 +138,8 @@ TEST(NodeTest, SingleRotationRight) {
 
     EXPECT_EQ(leftChild->key(), 1);
     EXPECT_EQ(leftChild.get(), oldAddress);
-    EXPECT_EQ(leftChild->fb(), 0);
-    EXPECT_EQ(rightChild->fb(), 0);
+    EXPECT_EQ(leftChild->bf(), 0);
+    EXPECT_EQ(rightChild->bf(), 0);
     EXPECT_EQ(rightChild->key(), 3);
 }
 
@@ -151,14 +151,14 @@ TEST(NodeTest, SingleRotationLeft) {
     std::tie(node, gotTaller) = node->insert(std::move(node), 2);
 
     ASSERT_EQ(node.get(), oldAddress);
-    EXPECT_EQ(node->fb(), -1);
+    EXPECT_EQ(node->bf(), -1);
     EXPECT_TRUE(gotTaller);
 
     std::tie(node, gotTaller) = node->insert(std::move(node), 1);
 
     ASSERT_NE(node.get(), oldAddress);
     EXPECT_EQ(node->key(), 2);
-    EXPECT_EQ(node->fb(), 0);
+    EXPECT_EQ(node->bf(), 0);
     EXPECT_FALSE(gotTaller);
 
     decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
@@ -169,8 +169,8 @@ TEST(NodeTest, SingleRotationLeft) {
 
     EXPECT_EQ(leftChild->key(), 1);
     EXPECT_EQ(rightChild.get(), oldAddress);
-    EXPECT_EQ(leftChild->fb(), 0);
-    EXPECT_EQ(rightChild->fb(), 0);
+    EXPECT_EQ(leftChild->bf(), 0);
+    EXPECT_EQ(rightChild->bf(), 0);
     EXPECT_EQ(rightChild->key(), 3);
 }
 
@@ -182,14 +182,14 @@ TEST(NodeTest, DoubleRotationRight) {
     std::tie(node, gotTaller) = node->insert(std::move(node), 1);
 
     ASSERT_EQ(node.get(), oldAddress);
-    EXPECT_EQ(node->fb(), -1);
+    EXPECT_EQ(node->bf(), -1);
     EXPECT_TRUE(gotTaller);
 
     std::tie(node, gotTaller) = node->insert(std::move(node), 2);
 
     ASSERT_NE(node.get(), oldAddress);
     EXPECT_EQ(node->key(), 2);
-    EXPECT_EQ(node->fb(), 0);
+    EXPECT_EQ(node->bf(), 0);
     EXPECT_FALSE(gotTaller);
 
     decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
@@ -200,7 +200,7 @@ TEST(NodeTest, DoubleRotationRight) {
 
     EXPECT_EQ(leftChild->key(), 1);
     EXPECT_EQ(rightChild.get(), oldAddress);
-    EXPECT_EQ(rightChild->fb(), 0);
+    EXPECT_EQ(rightChild->bf(), 0);
     EXPECT_EQ(rightChild->key(), 3);
 }
 
@@ -212,14 +212,14 @@ TEST(NodeTest, DoubleRotationLeft) {
     std::tie(node, gotTaller) = node->insert(std::move(node), 3);
 
     ASSERT_EQ(node.get(), oldAddress);
-    EXPECT_EQ(node->fb(), 1);
+    EXPECT_EQ(node->bf(), 1);
     EXPECT_TRUE(gotTaller);
 
     std::tie(node, gotTaller) = node->insert(std::move(node), 2);
 
     ASSERT_NE(node.get(), oldAddress);
     EXPECT_EQ(node->key(), 2);
-    EXPECT_EQ(node->fb(), 0);
+    EXPECT_EQ(node->bf(), 0);
     EXPECT_FALSE(gotTaller);
 
     decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
@@ -230,7 +230,7 @@ TEST(NodeTest, DoubleRotationLeft) {
 
     EXPECT_EQ(leftChild->key(), 1);
     EXPECT_EQ(leftChild.get(), oldAddress);
-    EXPECT_EQ(leftChild->fb(), 0);
+    EXPECT_EQ(leftChild->bf(), 0);
     EXPECT_EQ(rightChild->key(), 3);
 }
 
@@ -259,7 +259,7 @@ TEST(NodeTest, RemoveRightChild) {
     EXPECT_EQ(*receivedValue, 2);
 
     EXPECT_EQ(node.get(), oldAddress);
-    EXPECT_EQ(node->fb(), 0);
+    EXPECT_EQ(node->bf(), 0);
 }
 
 TEST(NodeTest, RemoveLeftChild) {
@@ -275,7 +275,7 @@ TEST(NodeTest, RemoveLeftChild) {
     EXPECT_EQ(*receivedValue, 1);
 
     EXPECT_EQ(node.get(), oldAddress);
-    EXPECT_EQ(node->fb(), 0);
+    EXPECT_EQ(node->bf(), 0);
 }
 
 TEST(NodeTest, RemoveNodeWithLeftChild) {
@@ -291,7 +291,7 @@ TEST(NodeTest, RemoveNodeWithLeftChild) {
     EXPECT_EQ(*receivedValue, 2);
 
     ASSERT_EQ(node.get(), leftChildAddress);
-    EXPECT_EQ(node->fb(), 0);
+    EXPECT_EQ(node->bf(), 0);
 }
 
 TEST(NodeTest, RemoveNodeWithRightChild) {
@@ -307,7 +307,7 @@ TEST(NodeTest, RemoveNodeWithRightChild) {
     EXPECT_EQ(*receivedValue, 2);
 
     ASSERT_EQ(node.get(), rightChildAddress);
-    EXPECT_EQ(node->fb(), 0);
+    EXPECT_EQ(node->bf(), 0);
 }
 
 TEST(NodeTest, RemoveNodeWithTwoChildren) {
@@ -322,7 +322,7 @@ TEST(NodeTest, RemoveNodeWithTwoChildren) {
 
     ASSERT_TRUE(receivedValue);
     ASSERT_EQ(node.get(), leftChildAddress);
-    EXPECT_EQ(node->fb(), 1);
+    EXPECT_EQ(node->bf(), 1);
     EXPECT_EQ(*receivedValue, 2);
 }
 
@@ -333,7 +333,7 @@ TEST(NodeTest, RemoveNodeWithTwoChildrenAndGrandchild) {
     std::tie(node, std::ignore) = node->insert(std::move(node), 4);
     std::tie(node, std::ignore) = node->insert(std::move(node), 2);
 
-    ASSERT_EQ(node->fb(), -1);
+    ASSERT_EQ(node->bf(), -1);
     ASSERT_NE(node->getChild(NodeInt::Direction::Left), nullptr);
 
     auto expectedRoot = node->getChild(NodeInt::Direction::Left)->getChild(NodeInt::Direction::Right).get();
@@ -346,7 +346,7 @@ TEST(NodeTest, RemoveNodeWithTwoChildrenAndGrandchild) {
     ASSERT_EQ(node.get(), expectedRoot);
     EXPECT_EQ(*receivedValue, 3);
 
-    EXPECT_EQ(node->fb(), 0);
+    EXPECT_EQ(node->bf(), 0);
 }
 
 class NodeComplexTest: public ::testing::Test {
@@ -380,7 +380,7 @@ TEST_F(NodeComplexTest, RemoveRoot) {
     ASSERT_EQ(node.get(), expectedRoot);
     EXPECT_EQ(*receivedValue, 5);
 
-    EXPECT_EQ(node->fb(), 0);
+    EXPECT_EQ(node->bf(), 0);
 }
 
 TEST_F(NodeComplexTest, RemoveNode2) {
@@ -398,7 +398,7 @@ TEST_F(NodeComplexTest, RemoveNode2) {
     ASSERT_EQ(node.get(), oldAddress);
     EXPECT_EQ(*receivedValue, 2);
 
-    EXPECT_EQ(node->fb(), 0);
+    EXPECT_EQ(node->bf(), 0);
 
     decltype(auto) leftChild = node->getChild(NodeInt::Direction::Left);
     EXPECT_EQ(leftChild.get(), expectedLeftChild);
@@ -422,8 +422,8 @@ public:
             EXPECT_GT(child->key(), node->key());
             rightSubTreeHeight = checkOrderAndReturnSize(child);
         }
-        EXPECT_EQ(node->fb(), rightSubTreeHeight - leftSubTreeHeight);
-        EXPECT_LE(abs(node->fb()), 1);
+        EXPECT_EQ(node->bf(), rightSubTreeHeight - leftSubTreeHeight);
+        EXPECT_LE(abs(node->bf()), 1);
         return std::max(leftSubTreeHeight, rightSubTreeHeight) + 1;
     };
 
